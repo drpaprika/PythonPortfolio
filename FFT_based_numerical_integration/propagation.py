@@ -13,7 +13,7 @@ class BeamPropagation:
     (m1, n1) and (m2, n2) after numerical propagation over a given distance z in free space.
     """
 
-    def __init__(self):
+    def __init__(self, config):
 
         # Read the arguments from the config file
         self.m1, self.n1 = config.getint('main', 'm1'), config.getint('main', 'n1')     # 1st mode orders
@@ -30,8 +30,8 @@ class BeamPropagation:
             self.N += 1
 
         # Print info
-        self.rayleigh_range = np.pi/self.lam*self.w0**2.0
-        delta_s = self.aperture_side/self.N
+        self.rayleigh_range = np.pi / self.lam * self.w0**2.0
+        delta_s = self.aperture_side / self.N
         print(f'Aperture size : {self.aperture_side}x{self.aperture_side} µm')
         print(f'Rayleigh range : {round(self.rayleigh_range,2)} µm')
         print(f'Propagation distance : {self.z} µm')
@@ -41,7 +41,7 @@ class BeamPropagation:
         # Setup the sampling grids
         # Aperture plane grid
         self.s = np.linspace(-self.aperture_side/2, self.aperture_side/2, self.N)
-        self.n = self.s
+        self.n = np.linspace(-self.aperture_side/2, self.aperture_side/2, self.N)
         self.ss, self.nn = np.meshgrid(self.s, self.n)
         # Observation plane grid
         self.x = np.linspace(-self.aperture_side/2, self.aperture_side/2, self.N)
@@ -59,14 +59,14 @@ class BeamPropagation:
         """
 
         # Simpson's rule
-        B = (1/3)*np.array([1] + [4,2]*int(self.N/2-1) + [4, 1])
+        B = (1/3) * np.array([1] + [4,2] * int(self.N / 2-1) + [4, 1])
         W = np.dot(np.transpose(B), B)
         U = np.multiply(W, mode)
 
         # Zero-pad to 2N-1
         U = np.pad(U,
-                   [(0, self.N-1),   # padding for first dimension
-                    (0, self.N-1)],  # padding for second dimension
+                   [(0, self.N - 1),   # padding for first dimension
+                    (0, self.N - 1)],  # padding for second dimension
                    mode='constant',
                    constant_values=0)
 
@@ -82,15 +82,15 @@ class BeamPropagation:
         :return:  H
         """
 
-        X = np.zeros(2*self.N-1)
-        Y = np.zeros(2*self.N-1)
-        for j in range(2*self.N-1):
+        X = np.zeros(2 * self.N - 1)
+        Y = np.zeros(2 * self.N - 1)
+        for j in range(2 * self.N - 1):
             if j < self.N:
-                X[j] = self.x[0] - self.s[self.N-1-j]
-                Y[j] = self.y[0] - self.n[self.N-1-j]
+                X[j] = self.x[0] - self.s[self.N - 1 - j]
+                Y[j] = self.y[0] - self.n[self.N - 1 - j]
             else:
-                X[j] = self.x[j-self.N-1] - self.s[0]
-                Y[j] = self.y[j-self.N-1] - self.n[0]
+                X[j] = self.x[j - self.N - 1] - self.s[0]
+                Y[j] = self.y[j - self.N - 1] - self.n[0]
 
         XX, YY = np.meshgrid(X, Y)
         H = self.impulse_response(XX, YY, z)
@@ -113,12 +113,12 @@ class BeamPropagation:
         H = self.compute_H(z)
 
         # Sampling intervals in the aperture plane
-        delta_s = self.aperture_side/self.N
-        delta_n = self.aperture_side/self.N
+        delta_s = self.aperture_side / self.N
+        delta_n = self.aperture_side / self.N
 
-        S = np.fft.ifft2(np.multiply(np.fft.fft2(U), np.fft.fft2(H))) * delta_s*delta_n
+        S = np.fft.ifft2(np.multiply(np.fft.fft2(U), np.fft.fft2(H))) * delta_s * delta_n
 
-        return S[self.N-1:,self.N-1:]
+        return S[self.N - 1:, self.N - 1:]
 
 
     def plot(self, animate:bool):
@@ -238,9 +238,9 @@ class BeamPropagation:
         if order == 0:
             return 1
         elif order == 1:
-            return 2*x
+            return 2 * x
         else:
-            return 2*x*self.hermite_poly(order-1, x) - 2*(order-1)*self.hermite_poly(order-2, x)
+            return 2 * x * self.hermite_poly(order-1, x) - 2 * (order-1) * self.hermite_poly(order-2, x)
 
 
     def one_dim_hg_mode(self, order:int, x:np.array, z:float):
@@ -258,14 +258,14 @@ class BeamPropagation:
 
         # Intermediate variables
         zR = self.rayleigh_range
-        W  = self.w0*np.sqrt(1 + (z/zR)**2)                    # Gaussian beam radius
-        R  = np.sqrt(z**2 + (np.pi*self.w0**2/self.lam)**2)    # Wavefront radius of curvature
+        W  = self.w0 * np.sqrt(1 + (z/zR)**2)                    # Gaussian beam radius
+        R  = np.sqrt(z**2 + (np.pi * self.w0**2 / self.lam)**2)    # Wavefront radius of curvature
 
         # Electric field amplitude
-        return (2/np.pi)**(1/4) \
-               * np.sqrt((2**order)*math.factorial(order)*W) * ((zR+1j*z)/R)**(order+1/2) \
-               * self.hermite_poly(order, np.sqrt(2)*x/W) \
-               * np.exp(-1j*(np.pi*(x**2)*z)/(2*self.lam*R**2) - x**2/(W**2))
+        return (2 / np.pi)**(1/4) \
+               * np.sqrt((2**order) * math.factorial(order) * W) * ((zR + 1j * z) / R)**(order + 1/2) \
+               * self.hermite_poly(order, np.sqrt(2) * x / W) \
+               * np.exp(-1j * (np.pi*(x**2) * z) / (2 * self.lam * R**2) - x**2 / (W**2))
 
 
     def two_dim_hg_mode(self, m:int, n:int, x:np.array, y:np.array):
@@ -297,9 +297,9 @@ class BeamPropagation:
         """
 
         r = np.sqrt(x**2 + y**2 + z**2)
-        k = 2*np.pi/self.lam         # Wavenumber of light
+        k = 2 * np.pi / self.lam         # Wavenumber of light
 
-        return 1/(2*np.pi) * np.exp(1j*k*r)/r * z/r * (1/r * 1j*k)
+        return 1 / (2 * np.pi) * np.exp(1j * k * r) / r * z / r * (1 / r * 1j * k)
 
 
 
@@ -307,16 +307,15 @@ class BeamPropagation:
 
 # Read the arguments from the command line
 parser = argparse.ArgumentParser()
-# settings_cfg = ConfigParser(inline_comment_prefixes="#")
 parser.add_argument("--animate-True",  default=False, action="store_true",  help="Animate the propagation plot")
 parser.add_argument("--animate-False", default=False, action="store_false", help="Do not animate the propagation plot")
 parser.add_argument("file_path", type=Path, help="Path to the config file")
 args = parser.parse_args()
 
 # Read the config filename (.ini) from the command line
-config = ConfigParser(inline_comment_prefixes="#")
-config.read(args.file_path)
+myconfig = ConfigParser(inline_comment_prefixes="#")
+myconfig.read(args.file_path)
 
 # Run the script
-propagator = BeamPropagation()
+propagator = BeamPropagation(config=myconfig)
 propagator.plot(animate=args.animate_True)
