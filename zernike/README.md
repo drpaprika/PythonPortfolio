@@ -1,4 +1,9 @@
-# Zernike polynomials
+# Zernike freeform surfaces creation and visualization
+
+![screenshot](screenshot.png)
+
+This script allows to create Fringe Zernike surface and visualize them.
+Additionally, surface derivative and surface normal are computed, as these quantities are usefull in ray-tracing software. 
 
 Analytical expressions of the surface sag, its derivatives, and surface normal vector.\
 [drpaprika](https://github.com/drpaprika), 2025. 
